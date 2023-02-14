@@ -15,3 +15,6 @@ func (r *Record) Write() {
 func (r *Record) Open() {
 
 }
+func (r *Record) Delete() {
+
+}
