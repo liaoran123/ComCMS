@@ -9,12 +9,12 @@ type Record struct {
 func NewRecord() *Record {
 	return &Record{}
 }
-func (r *Record) Write() {
+func (r *Record) Write(paras map[string]string) {
 
 }
-func (r *Record) Open() {
+func (r *Record) Open(paras map[string]string) {
 
 }
-func (r *Record) Delete() {
+func (r *Record) Del(paras map[string]string) {
 
 }

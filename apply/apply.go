@@ -1,10 +1,17 @@
 package apply
 
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/liaoran123/xbdb"
+)
+
 const (
 	VisibleClassify uint8 = 0 //0,可见性权限；
 	postClassify    uint8 = 1 //1,发布权限；
-	replyClassify   uint8 = 2 //0,回复权限；
-	delClassify     uint8 = 3 //0,删除性权限；这个用于管理员。
+	replyClassify   uint8 = 2 //2,回复权限；
+	delClassify     uint8 = 3 //3,删除权限；这个用于管理员。
 )
 
 /*
@@ -25,30 +32,42 @@ const (
 	发布和回复以及可见性都是自己。
 */
 type Apply struct {
-	Name        string //应用名称
-	Description string //应用描述
-	Visible     uint8  //可见性权限。0，公共；1，群组；2，自己。
-	Post        uint8  //发表权限。0，公共；1，群组；2，自己。
-	Reply       uint8  //回复权限。0，公共；1，群组；2，自己。
-	VGroup      Group  //可见性权限为群组时的用户列表。其他情况为nil
-	PGroup      Group  //发表权限为群组时的用户列表。其他情况为nil
-	RGroup      Group  //回复权限为群组时的用户列表。其他情况为nil
-	DGroup      Group  //删除、屏蔽记录权限。
-	Record      Record
+	table        map[string]*xbdb.Table
+	name         string //应用名称
+	creater      int    //创建者id
+	description  string //应用描述
+	permVisible  uint8  //可见性权限。0，公共；1，群组；2，自己。
+	permPost     uint8  //发表权限。0，公共；1，群组；2，自己。
+	permReply    uint8  //回复权限。0，公共；1，群组；2，自己。
+	groupVisible Group  //可见性权限为群组时的用户列表。其他情况为nil
+	groupPost    Group  //发表权限为群组时的用户列表。其他情况为nil
+	groupReply   Group  //回复权限为群组时的用户列表。其他情况为nil
+	groupDel     Group  //删除、屏蔽记录权限。即管理员。
+	record       Record
 }
 
 func NewApply(name string) *Apply {
+	if table == nil {
+		table = xbdb.OpenTableStructs()
+	}
+	fsidx := table[name].Ifo.GetFieldIds([]string{"name"})
+	tbd := table[name].Select.WhereIdx([]byte("name"), []byte(name), false, 0, 1, fsidx, false)
+	tbmap := table[name].RDtoMap(tbd.Rd[0])
+	fmt.Printf("tbmap: %v\n", tbmap)
+
 	//通过name读取db获取该Apply的对应属性。
-	return &Apply{}
+	return &Apply{
+		name: name,
+	}
 }
 
 // 授权控制器
 func (a *Apply) empower(userid int, classify uint8) bool { //classify uint8 //1,发布；2，回复,0,可见性；3，删除。
 	groups := map[uint8]Group{
-		0: a.VGroup,
-		1: a.PGroup,
-		2: a.RGroup,
-		3: a.DGroup,
+		0: a.groupVisible,
+		1: a.groupPost,
+		2: a.groupReply,
+		3: a.groupDel,
 	}
 	if g, ok := groups[classify]; ok {
 		return g.Find(userid)
@@ -57,25 +76,45 @@ func (a *Apply) empower(userid int, classify uint8) bool { //classify uint8 //1,
 }
 
 // 添加记录
-func (a *Apply) PostRecord(userid int, classify uint8) { //classify uint8 //1,发布；2，回复。
-	if !a.empower(userid, classify) {
-		return
+func (a *Apply) PostRec(paras map[string]string) { //0，公共；1，群组；2，自己
+	userid, _ := strconv.Atoi(paras["userid"])
+	if a.permPost == 1 {
+
+		if !a.empower(userid, postClassify) {
+			return
+		}
 	}
-	a.Record.Write()
+	if a.permPost == 2 {
+		if a.creater != userid {
+			return
+		}
+	}
+	a.record.Write(paras)
+
 }
 
 // 打开记录
-func (a *Apply) OpenRecord(userid int) {
-	if !a.empower(userid, VisibleClassify) {
-		return
+func (a *Apply) OpenRec(paras map[string]string) { //0，公共；1，群组；2，自己
+	userid, _ := strconv.Atoi(paras["userid"])
+	if a.permVisible == 1 {
+		if !a.empower(userid, VisibleClassify) {
+			return
+		}
 	}
-	a.Record.Open()
+	if a.permVisible == 2 {
+		if a.creater != userid {
+			return
+		}
+	}
+	a.record.Open(paras)
 }
 
-// 删除记录
-func (a *Apply) DelRecord(userid int) {
+// 删除记录只有群组权限。
+// 删除、屏蔽记录权限。即管理员，也是一个群组。
+func (a *Apply) DelRec(paras map[string]string) {
+	userid, _ := strconv.Atoi(paras["userid"])
 	if !a.empower(userid, delClassify) {
 		return
 	}
-	a.Record.Delete()
+	a.record.Del(paras)
 }

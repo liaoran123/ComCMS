@@ -1,0 +1,5 @@
+//更新所有的包
+go get -u all
+
+////更新某个包
+go get -u github.com/liaoran123/xbdb
