@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	VisibleClassify uint8 = 0 //0,可见性权限；
-	postClassify    uint8 = 1 //1,发布权限；
-	replyClassify   uint8 = 2 //2,回复权限；
-	delClassify     uint8 = 3 //3,删除权限；这个用于管理员。
+	permVisible uint8 = 0 //0,可见性权限；
+	permPost    uint8 = 1 //1,发布权限；
+	permReply   uint8 = 2 //2,回复权限；
+	permdel     uint8 = 3 //3,删除权限；这个用于管理员。
 )
 
 /*
@@ -80,7 +80,7 @@ func (a *Apply) PostRec(paras map[string]string) { //0，公共；1，群组；2
 	userid, _ := strconv.Atoi(paras["userid"])
 	if a.permPost == 1 {
 
-		if !a.empower(userid, postClassify) {
+		if !a.empower(userid, permPost) {
 			return
 		}
 	}
@@ -97,7 +97,7 @@ func (a *Apply) PostRec(paras map[string]string) { //0，公共；1，群组；2
 func (a *Apply) OpenRec(paras map[string]string) { //0，公共；1，群组；2，自己
 	userid, _ := strconv.Atoi(paras["userid"])
 	if a.permVisible == 1 {
-		if !a.empower(userid, VisibleClassify) {
+		if !a.empower(userid, permVisible) {
 			return
 		}
 	}
@@ -113,7 +113,7 @@ func (a *Apply) OpenRec(paras map[string]string) { //0，公共；1，群组；2
 // 删除、屏蔽记录权限。即管理员，也是一个群组。
 func (a *Apply) DelRec(paras map[string]string) {
 	userid, _ := strconv.Atoi(paras["userid"])
-	if !a.empower(userid, delClassify) {
+	if !a.empower(userid, permdel) {
 		return
 	}
 	a.record.Del(paras)

@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 
 	"github.com/liaoran123/xbdb"
 )
@@ -14,18 +12,6 @@ var (
 	table     map[string]*xbdb.Table
 	ConfigMap map[string]interface{}
 )
-
-// 获取程序绝对路径目录
-func GetCurrentAbPath() string {
-	exePath, err := os.Executable()
-	if err != nil {
-		//log.Fatal(err)
-		return ""
-	}
-	res, _ := filepath.EvalSymlinks(filepath.Dir(exePath))
-	return res + "\\"
-
-}
 
 func Ini() {
 	path := GetCurrentAbPath()                       //守护程序读取文件时需要绝对路径
